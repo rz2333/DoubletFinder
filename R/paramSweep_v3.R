@@ -1,4 +1,4 @@
-paramSweep_v3 <- function(seu, PCs=1:10, sct = FALSE, num.cores=1) {
+paramSweep_v3 <- function(seu, PCs=1:10, sct = FALSE, verbose = FALSE, num.cores=1) {
   require(Seurat); require(fields);
   ## Set pN-pK param sweep ranges
   pK <- c(0.0005, 0.001, 0.005, seq(0.01,0.3,by=0.01))
@@ -39,7 +39,9 @@ paramSweep_v3 <- function(seu, PCs=1:10, sct = FALSE, num.cores=1) {
                         data,
                         orig.commands,
                         PCs,
-                        sct,mc.cores=num.cores)
+                        sct,mc.cores=num.cores,
+                        verbose=verbose,
+                        mc.set.seed=TRUE)
     stopCluster(cl)
   }else{
     output2 <- lapply(as.list(1:length(pN)),
@@ -51,7 +53,8 @@ paramSweep_v3 <- function(seu, PCs=1:10, sct = FALSE, num.cores=1) {
                       data,
                       orig.commands,
                       PCs,
-                      sct)
+                      sct,
+                      verbose=verbose)
   }
 
   ## Write parallelized output into list

@@ -1,10 +1,12 @@
-parallel_paramSweep_v3 <- function(n, n.real.cells, real.cells, pK, pN, data, orig.commands, PCs, sct)  {
+parallel_paramSweep_v3 <- function(n, n.real.cells, real.cells, pK, pN, data, orig.commands, PCs, sct, verbose)  {
 
   sweep.res.list = list()
   list.ind = 0
 
   ## Make merged real-artifical data
-  print(paste("Creating artificial doublets for pN = ", pN[n]*100,"%",sep=""))
+  if(verbose){
+    print(paste("Creating artificial doublets for pN = ", pN[n]*100,"%",sep=""))
+  }
   n_doublets <- round(n.real.cells/(1 - pN[n]) - n.real.cells)
   real.cells1 <- sample(real.cells, n_doublets, replace = TRUE)
   real.cells2 <- sample(real.cells, n_doublets, replace = TRUE)
@@ -14,16 +16,23 @@ parallel_paramSweep_v3 <- function(n, n.real.cells, real.cells, pK, pN, data, or
 
   ## Pre-process Seurat object
   if (sct == FALSE) {
-    print("Creating Seurat object...")
+    if(verbose){
+        print("Creating Seurat object...") 
+    }  
     seu_wdoublets <- CreateSeuratObject(counts = data_wdoublets)
 
-    print("Normalizing Seurat object...")
+    if(verbose){
+        print("Normalizing Seurat object...")
+    }
     seu_wdoublets <- NormalizeData(seu_wdoublets,
                                    normalization.method = orig.commands$NormalizeData.RNA@params$normalization.method,
                                    scale.factor = orig.commands$NormalizeData.RNA@params$scale.factor,
-                                   margin = orig.commands$NormalizeData.RNA@params$margin)
-
-    print("Finding variable genes...")
+                                   margin = orig.commands$NormalizeData.RNA@params$margin,
+                                   verbose = verbose)
+    
+    if(verbose){
+        print("Finding variable genes...")    
+    }
     seu_wdoublets <- FindVariableFeatures(seu_wdoublets,
                                           selection.method = orig.commands$FindVariableFeatures.RNA$selection.method,
                                           loess.span = orig.commands$FindVariableFeatures.RNA$loess.span,
@@ -34,9 +43,12 @@ parallel_paramSweep_v3 <- function(n, n.real.cells, real.cells, pK, pN, data, or
                                           binning.method = orig.commands$FindVariableFeatures.RNA$binning.method,
                                           nfeatures = orig.commands$FindVariableFeatures.RNA$nfeatures,
                                           mean.cutoff = orig.commands$FindVariableFeatures.RNA$mean.cutoff,
-                                          dispersion.cutoff = orig.commands$FindVariableFeatures.RNA$dispersion.cutoff)
+                                          dispersion.cutoff = orig.commands$FindVariableFeatures.RNA$dispersion.cutoff,
+                                          verbose = verbose)
 
-    print("Scaling data...")
+    if(verbose){
+        print("Scaling data...")
+    }
     seu_wdoublets <- ScaleData(seu_wdoublets,
                                features = orig.commands$ScaleData.RNA$features,
                                model.use = orig.commands$ScaleData.RNA$model.use,
@@ -44,9 +56,12 @@ parallel_paramSweep_v3 <- function(n, n.real.cells, real.cells, pK, pN, data, or
                                do.center = orig.commands$ScaleData.RNA$do.center,
                                scale.max = orig.commands$ScaleData.RNA$scale.max,
                                block.size = orig.commands$ScaleData.RNA$block.size,
-                               min.cells.to.block = orig.commands$ScaleData.RNA$min.cells.to.block)
+                               min.cells.to.block = orig.commands$ScaleData.RNA$min.cells.to.block,
+                               verbose = verbose)
 
-    print("Running PCA...")
+    if(verbose){
+        print("Running PCA...")
+    }
     seu_wdoublets <- RunPCA(seu_wdoublets,
                             features = orig.commands$ScaleData.RNA$features,
                             npcs = length(PCs),
@@ -57,18 +72,27 @@ parallel_paramSweep_v3 <- function(n, n.real.cells, real.cells, pK, pN, data, or
 
   if (sct == TRUE) {
     require(sctransform)
-    print("Creating Seurat object...")
+      if(verbose){
+        print("Creating Seurat object...")
+      }
     seu_wdoublets <- CreateSeuratObject(counts = data_wdoublets)
 
-    print("Running SCTransform...")
+    if(verbose){
+        print("Running SCTransform...")   
+    }
     seu_wdoublets <- SCTransform(seu_wdoublets)
 
-    print("Running PCA...")
-    seu_wdoublets <- RunPCA(seu_wdoublets, npcs = length(PCs))
+    if(verbose){
+        print("Running PCA...")    
+    }
+    seu_wdoublets <- RunPCA(seu_wdoublets, npcs = length(PCs),
+                            verbose = verbose)
   }
 
   ## Compute PC distance matrix
-  print("Calculating PC distance matrix...")
+  if(verbose){
+      print("Calculating PC distance matrix...")    
+  }
   nCells <- nrow(seu_wdoublets@meta.data)
   pca.coord <- seu_wdoublets@reductions$pca@cell.embeddings[ , PCs]
   rm(seu_wdoublets)
@@ -76,7 +100,10 @@ parallel_paramSweep_v3 <- function(n, n.real.cells, real.cells, pK, pN, data, or
   dist.mat <- fields::rdist(pca.coord)[,1:n.real.cells]
 
   ## Pre-order PC distance matrix prior to iterating across pK for pANN computations
-  print("Defining neighborhoods...")
+  if(verbose){
+      print("Defining neighborhoods...")    
+  }
+  
   for (i in 1:n.real.cells) {
     dist.mat[,i] <- order(dist.mat[,i])
   }
@@ -86,9 +113,14 @@ parallel_paramSweep_v3 <- function(n, n.real.cells, real.cells, pK, pN, data, or
   dist.mat <- dist.mat[1:ind, ]
 
   ## Compute pANN across pK sweep
-  print("Computing pANN across all pK...")
+  
+  if(verbose){
+      print("Computing pANN across all pK...")    
+  }
   for (k in 1:length(pK)) {
-    print(paste("pK = ", pK[k], "...", sep = ""))
+      if(verbose){
+          print(paste("pK = ", pK[k], "...", sep = ""))   
+      }
     pk.temp <- round(nCells * pK[k])
     pANN <- as.data.frame(matrix(0L, nrow = n.real.cells, ncol = 1))
     colnames(pANN) <- "pANN"
