@@ -15,6 +15,7 @@ paramSweep_v3 <- function(seu, PCs = 1:10, sct = FALSE,
 
   ## Down-sample cells to 10000 (when applicable) for computational effiency
   if (nrow(seu@meta.data) > 10000) {
+    set.seed(seed)
     real.cells <- rownames(seu@meta.data)[sample(1:nrow(seu@meta.data),
                                                  10000, replace = FALSE)]
     data <- seu@assays$RNA@counts[, real.cells]
