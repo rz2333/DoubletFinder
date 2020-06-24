@@ -8,7 +8,9 @@ parallel_paramSweep_v3 <- function(n, n.real.cells, real.cells, pK, pN, data,
     print(paste("Creating artificial doublets for pN = ", pN[n] * 100, "%", sep = ""))
   }
   n_doublets <- round(n.real.cells / (1 - pN[n]) - n.real.cells)
+  set.seed(seed)
   real.cells1 <- sample(real.cells, n_doublets, replace = TRUE)
+  set.seed(seed)
   real.cells2 <- sample(real.cells, n_doublets, replace = TRUE)
   doublets <- (data[, real.cells1] + data[, real.cells2]) / 2
   colnames(doublets) <- paste("X", 1:n_doublets, sep = "")
