@@ -2,7 +2,7 @@
   cell <- list()
   cell[[1]] <- sample(real.cells, n_doublets, replace = TRUE)
   cell[[2]] <- sample(real.cells, n_doublets, replace = TRUE)
-  return cell 
+  return(cell) 
   }
 
 parallel_paramSweep_v3 <- function(n, n.real.cells, real.cells, pK, pN, data,
