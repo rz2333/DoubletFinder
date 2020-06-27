@@ -1,3 +1,10 @@
+.Sample <- function(real.cells, n_doublets, replace) {
+  cell <- list()
+  cell[[1]] <- sample(real.cells, n_doublets, replace = TRUE)
+  cell[[2]] <- sample(real.cells, n_doublets, replace = TRUE)
+  return cell 
+  }
+
 parallel_paramSweep_v3 <- function(n, n.real.cells, real.cells, pK, pN, data,
                                    orig.commands, PCs, sct, verbose, seed) {
   sweep.res.list <- list()
@@ -8,10 +15,15 @@ parallel_paramSweep_v3 <- function(n, n.real.cells, real.cells, pK, pN, data,
     print(paste("Creating artificial doublets for pN = ", pN[n] * 100, "%", sep = ""))
   }
   n_doublets <- round(n.real.cells / (1 - pN[n]) - n.real.cells)
-  set.seed(seed)
-  real.cells1 <- sample(real.cells, n_doublets, replace = TRUE)
-  set.seed(seed)
-  real.cells2 <- sample(real.cells, n_doublets, replace = TRUE)
+#   set.seed(seed)
+#   real.cells1 <- sample(real.cells, n_doublets, replace = TRUE)
+#   set.seed(seed)
+#   real.cells2 <- sample(real.cells, n_doublets, replace = TRUE)
+  withr::with_seed(seed = seed, 
+                   real.cells <- .Sample(real.cells, n_doublets, replace=TRUE))
+  real.cells1 <- real.cells[[1]]
+  real.cells2 <- real.cells[[2]]
+  
   doublets <- (data[, real.cells1] + data[, real.cells2]) / 2
   colnames(doublets) <- paste("X", 1:n_doublets, sep = "")
   data_wdoublets <- cbind(data, doublets)
