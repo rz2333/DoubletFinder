@@ -1,9 +1,9 @@
-.Sample <- function(real.cells, n_doublets, replace) {
-  cell <- list()
-  cell[[1]] <- sample(real.cells, n_doublets, replace = TRUE)
-  cell[[2]] <- sample(real.cells, n_doublets, replace = TRUE)
-  return(cell) 
-  }
+# .Sample <- function(real.cells, n_doublets, replace) {
+#   cell <- list()
+#   cell[[1]] <- sample(real.cells, n_doublets, replace = TRUE)
+#   cell[[2]] <- sample(real.cells, n_doublets, replace = TRUE)
+#   return(cell) 
+#   }
 
 parallel_paramSweep_v3 <- function(n, n.real.cells, real.cells, pK, pN, data,
                                    orig.commands, PCs, sct, verbose, seed) {
@@ -19,10 +19,11 @@ parallel_paramSweep_v3 <- function(n, n.real.cells, real.cells, pK, pN, data,
 #   real.cells1 <- sample(real.cells, n_doublets, replace = TRUE)
 #   set.seed(seed)
 #   real.cells2 <- sample(real.cells, n_doublets, replace = TRUE)
-  withr::with_seed(seed = seed, 
-                   real.cells <- .Sample(real.cells, n_doublets, replace=TRUE))
-  real.cells1 <- real.cells[[1]]
-  real.cells2 <- real.cells[[2]]
+  cellsSample <- withr::with_seed(seed = seed, 
+                   lapply(1:2, function(x) {
+                   sample(real.cells, n_doublets, replace = TRUE)}))
+  real.cells1 <- cellsSample[[1]]
+  real.cells2 <- cellsSample[[2]]
   
   doublets <- (data[, real.cells1] + data[, real.cells2]) / 2
   colnames(doublets) <- paste("X", 1:n_doublets, sep = "")
